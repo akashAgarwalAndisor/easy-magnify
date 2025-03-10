@@ -13,7 +13,7 @@ export type EasyZoomOnHoverProps = {
     delayTimer?: number;
 
     /**
-     * The distance between main image and zoomed Image in pixels. 
+     * The distance between main image and zoomed Image in pixels.
      * @default 10
      */
     distance?: number;
@@ -28,14 +28,17 @@ export type EasyZoomOnHoverProps = {
         height?: number;
         src: string;
         alt?: string;
+        className?: string;
     }
     zoomImage: {
         src: string;
         alt?: string;
+        className?: string;
     }
     zoomContainerWidth?: number;
     zoomContainerHeight?: number;
     zoomLensScale?: number;
+    onLoad?: (element: HTMLImageElement) => void;
 }
 
 export type ImageDimensionType = {
@@ -46,7 +49,7 @@ export type ImageDimensionType = {
 
 const EasyZoomOnHover = React.forwardRef(function EasyZoomOnHover(props: EasyZoomOnHoverProps, ref: React.Ref<HTMLDivElement>) {
 
-    const { mainImage, zoomImage, loadingIndicator, delayTimer, distance = 10, zoomContainerWidth } = props;
+    const { mainImage, zoomImage, loadingIndicator, delayTimer, distance = 10, zoomContainerWidth, onLoad } = props;
     const { createZoomImage: createZoomImageHover } = useZoomImageHover();
 
     const imageHoverContainerRef = React.useRef<HTMLDivElement>(null);
@@ -61,13 +64,23 @@ const EasyZoomOnHover = React.forwardRef(function EasyZoomOnHover(props: EasyZoo
     const handleImageLoad = async () => {
         if (imgRef.current) {
             setImageDimensions({
-                width: imgRef.current.naturalWidth,
-                height: imgRef.current.naturalHeight,
+                width: imgRef.current.width,
+                height: imgRef.current.height,
             });
-            await delay(delayTimer ?? 1600);  //delay for better user experience
+            // await delay(delayTimer ?? 1600);  //delay for better user experience
             setIsImageLoaded(true);
         }
     };
+
+    React.useEffect(() => {
+        if (isImageLoaded && imgRef.current) {
+            onLoad && onLoad(imgRef.current);
+        }
+    }, [isImageLoaded])
+
+    React.useEffect(() => {
+        setIsImageLoaded(false)
+    }, [mainImage.src])
 
     React.useEffect(() => {
         if (imageDimension.width > 0 && imageDimension.height > 0) {
@@ -84,7 +97,7 @@ const EasyZoomOnHover = React.forwardRef(function EasyZoomOnHover(props: EasyZoo
                 scale: props.zoomLensScale ?? 3,
             });
         }
-    }, [isImageLoaded, imageDimension]);
+    }, [isImageLoaded, imageDimension, props?.zoomContainerHeight]);
 
     return (
         <>
@@ -100,13 +113,13 @@ const EasyZoomOnHover = React.forwardRef(function EasyZoomOnHover(props: EasyZoo
                 style={{
                     position: "relative",
                     width: props.mainImage.width ?? imageDimension.width,
-                    height: props.mainImage.height ?? imageDimension.height,
+                    height: "100%",
                     display: isImageLoaded ? "flex" : "none",
                     justifyItems: "start",
                 }}
             >
                 <img
-                    className="EasyZoomHoverSmallImage"
+                    className={`EasyZoomHoverSmallImage ${mainImage?.className || ""}`}
                     onLoad={handleImageLoad}
                     ref={imgRef}
                     style={{ height: "auto", width: "auto" }}
@@ -116,7 +129,7 @@ const EasyZoomOnHover = React.forwardRef(function EasyZoomOnHover(props: EasyZoo
 
                 <div
                     ref={zoomTargetRef}
-                    className="EasyZoomImageZoomHoverContainer"
+                    className={`EasyZoomImageZoomHoverContainer ${zoomImage?.className || ""}`}
                     id="zoomTargeted"
                     style={{
                         position: "absolute",
